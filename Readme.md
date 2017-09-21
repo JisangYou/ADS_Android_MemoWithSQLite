@@ -83,6 +83,9 @@ public void selectDate(String tableName) {
 
 ## HelperClass
 
+- 데이터베이스를 만들거나 열기위해 필요한 일들을 도와주는 역할
+- ex) 데이터베이스를 만드는 것 이외에도 테이블의 정의가 바뀌거나 하여, 스키마를 업그레이드할 필요가 있을 때
+
 ```Java
 class DatabaseHelper extends SQLiteOpenHelper {
 
