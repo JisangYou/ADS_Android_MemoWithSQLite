@@ -9,69 +9,148 @@ import org.androidtown.android_memo2.DBHelper;
 import java.util.ArrayList;
 
 /**
- * DAO - Data Access Object
- * <p>
+ * DAO : Data Access Object
+ * Data 조작을 담당
  * <p>
  * 사용 예)
- * MemoDAO dao =  new DAO();                             1. DAO 객체를 생성
- * String query = "insert into...()";                    2. QUERY 생성
- * dao.create(query);                                    3. 쿼리 실행
+ * <p>
+ * MemoDAO dao = new MemoDAO();                 1. DAO 객체 생성
+ * String insertQuery = "insert into ~~"        2. Query 생성
+ * dao.create(query);                           3. Query 실행
  */
-
 public class MemoDAO {
 
-    DBHelper helper;
+    DBHelper dbHelper;
 
-
-
-    public MemoDAO(Context context){
-        helper = new DBHelper(context);
+    public MemoDAO(Context context) { // MemoDAO가 호출되면 자동적으로 DB가 연결되면서 DATA를 조작할 준비를 함.
+        // 1. 데이터베이스에 연결
+        this.dbHelper = new DBHelper(context);
     }
-    // C 생성
-    public void create(String query){
-        SQLiteDatabase con = helper.getWritableDatabase(); // helper에서 데이터베이스를 쓸수 있게
-        con.execSQL(query);
-        con.close();
+
+    // 연결된 것을 토대로, CRUD방식으로 메소드 정의
+
+    private SQLiteDatabase getReadableConnection() {
+
+        return dbHelper.getReadableDatabase();
     }
-    // R 읽기
-    public ArrayList<Memo> read(){
-        String query = "select id, title, content, n_date from memo";
 
-        // 반환할 결과타입 정의
-        ArrayList<Memo> data = new ArrayList<>();
-        SQLiteDatabase con = helper.getReadableDatabase();
-        Cursor cursor = con.rawQuery(query, null);
+    private SQLiteDatabase getWritableConnection() {
 
-        while(cursor.moveToNext()){
-            Memo memo = new Memo();
-            // id 이름의 컬럼이 몇번째인지 index를 가져오고
-            //int index = cursor.getColumnIndex("id");
-            // 위에서 가져온 index로 실제 값을 가져와서 저장
-            memo.id = cursor.getInt(0);       // query 에서 가져올 컬럼이 몇번째 지정 되었는지 확인
-            memo.title = cursor.getString(1);
-            memo.content = cursor.getString(2);
-            memo.n_date = cursor.getString(3);
+        return dbHelper.getWritableDatabase();
+    }
 
-            data.add(memo);
+    private void closeConnection(SQLiteDatabase db) {
+        db.close();
+    }
+
+    private void executeSql(String sql) {
+        SQLiteDatabase conn = getWritableConnection();
+
+        conn.execSQL(sql);
+
+        closeConnection(conn);
+    }
+
+    /**
+     * C: 삽입에 관련된 함수
+     *
+     * @param memo
+     */
+    public void create(Memo memo) {
+
+        String createQuery = " INSERT INTO memo(title, content, nDate)";
+        createQuery += "VALUES('" + memo.getTitle() + "', '" + memo.getContent() + "', datetime('now', 'localtime'))";
+
+        executeSql(createQuery);
+    }
+
+    /**
+     * R : 읽기에 관련된 함수
+     *
+     * @return
+     */
+    public ArrayList<Memo> read(String columns[], String where) {
+
+        String query_prefix = "SELECT ";
+        String query_midfix = "";
+        for (int i = 0; i < columns.length; i++) {
+            query_midfix += " " + columns[i] + ((i != columns.length - 1) ? " ," : " ");
         }
-        con.close();
-        // 최종 데이터를 리턴
-        return data;
+        String query_suffix = "FROM memo";
+        if (where != null) {
+            query_suffix += " " + where;
+        }
+
+        String query = query_prefix + query_midfix + query_suffix;
+
+        // 1. 반환할 결과 타입을 정의
+        ArrayList<Memo> memoList = new ArrayList<>();
+
+        SQLiteDatabase con = getReadableConnection();
+
+        // 2. 조작
+        Cursor cursor = con.rawQuery(query, null);
+        //con.query(테이블명, columns[], selection 인자(where 절), selectionArgs 인자, groupBy 인자, having 인자, orderBy 인자);
+        while (cursor.moveToNext()) {
+            Memo memo = new Memo();
+            for (String col : columns) {
+                int index = cursor.getColumnIndex(col);
+                switch (col) {
+                    case "id":
+                        memo.setId(cursor.getInt(index));
+                        break;
+                    case "title":
+                        memo.setTitle(cursor.getString(index));
+                        break;
+                    case "content":
+                        memo.setContent(cursor.getString(index));
+                        break;
+                    case "nDate":
+                        memo.setnDate(cursor.getString(index));
+                        break;
+                }
+            }
+            memoList.add(memo);
+        }
+
+        // 3. 연결 해제
+        closeConnection(con);
+
+        // 데이터를 리턴
+        return memoList;
     }
-    // U 수정
-    public void update(String query){
-        SQLiteDatabase con = helper.getWritableDatabase();
-        con.execSQL(query);
-        con.close();
+
+    /**
+     * U : 수정에 관련된 함수
+     *
+     * @param memo
+     */
+    public void update(Memo memo) {
+
+
+        String updateQuery = " UPDATE memo " +
+                " SET title = '" + memo.getTitle() + "', " +
+                " content = '" + memo.getContent() + "', " +
+                " nDate = datetime('now', 'localtime')  " +
+                " WHERE id = (SELECT max(id) from Memo) ";
+        executeSql(updateQuery);
     }
-    // D 삭제
-    public void delete(String query){
-        SQLiteDatabase con = helper.getWritableDatabase();
-        con.execSQL(query);
-        con.close();
+
+    /**
+     * D: 삭제에 관련된 함수
+     */
+    public void delete() {
+
+
+        String deleteQuery = " DELETE FROM memo " +
+                " WHERE id = (SELECT max(id) from Memo)";
+        executeSql(deleteQuery);
     }
-    // 사용한 DAO를 닫는다.
-    public void close(){
-        helper.close();
+
+    /**
+     * DB Helper 를 닫는 메소드
+     */
+    public void close() {
+        dbHelper.close();
     }
 }

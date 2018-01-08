@@ -4,90 +4,80 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-/**
- * Created by Jisang on 2017-09-21.
- */
-
 public class DBHelper extends SQLiteOpenHelper {
+
+    // SQLite 는
+    // /data/data/패키지명/database/데이터베이스명 에 생성된다.
+
+    // DB name
     private static final String DB_NAME = "sqlite.db";
+    // DB version
     private static final int DB_VERSION = 1;
-//    // DBHelper 인스턴스
-//    private static DBHelper instance = null;
-//    // DBHelper 를 메모리에 하나만 띄워서 사용한다.
-//    public static DBHelper getInstance(Context context){
-//        if(instance == null){
-//            instance = new DBHelper(context);
-//        }
-//        return instance;
-//    }
 
-    public DBHelper(Context context){
+    // 매개변수가 없는 Default 생성자가 없는 Class 를 상속받기 위해서는
+    // Overloading 한 생성자를 호출해야 한다.
+    // super(매개변수...)
+    public DBHelper(Context context) {
+        // factory 는 ~~~
         super(context, DB_NAME, null, DB_VERSION);
-        // super 에서 넘겨받은 데이터베이스가 생성되어 있는지 확인한후
-        // 1. 없으면 onCreate를 호출
-        // 2. 있으면 버전을 체크해서 생성되어 있는 DB보다 버전이 높으면
-        //    opUpgrade를 호출해준다.
+
+        // super 에서 넘겨받은 데이터베이스가 생성되어 있는지 확인한 후
+        // 1. 없으면 onCreate 를 호출
+        // 2. 있으면 version 을 체크해서 생성되어 있는 DB 보다 version 이 높으면 onUpgrade 를 호출한다.
     }
 
+    // DB를 새로 생성할 때 호출되는 함수
     @Override
-    public void onCreate(SQLiteDatabase sqLiteDatabase) {
-        // 최초 생성할 테이블을 정의
-        // 데이터베이스가 업데이트되면
-        // 모든 히스토리가 쿼리에 반영되어 있어야 한다.
+    public void onCreate(SQLiteDatabase db) {
+        // 최초 생성할 테이블 상의
         // settings.config
-        String createQuery = "CREATE TABLE `memo` ( \n" +
-                "`id` INTEGER PRIMARY KEY AUTOINCREMENT, \n" +
-                "`title` TEXT, \n" +
-                "`content` TEXT, \n" +
-                "`n_date` TEXT " +
-                "'modified` TEXT )";
-        // 쿼리를 실행해서 테이블을 생성한다.
-        sqLiteDatabase.execSQL(createQuery);
+
+        // DB 가 업데이트 되면
+        // 모든 히스토리가 쿼리에 반영되어 있어야 한다.
+
+        String createDB = "CREATE TABLE `memo`                                \n" +
+                "( `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \n" +
+                "  `title` TEXT, \n" +
+                "  `content` TEXT, \n" +
+                "  `nDate` TEXT \n" +
+                ")";
+        // DB Query 실행
+        db.execSQL(createDB);
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int old, int newVersion) {
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // revision.config
-        // 변경된 버전과 현재버전을 비교해서
-        // 히스토리를 모두 반영해야 한다.
-        if(old < 2) {
-            // version 2
-            // String alterQuery2 = "ALTER TABLE `memo` ( \n" +
-            //                      Add Column modifed text);
-        }
-        if(old < 3) {
-            // version 3
-            // String alterQuery3 = "ALTER TABLE `memo` ( \n" +
-            //                      Add Column count text);
-        }
-        if(old < 4) {
-            // version 4
-            // String alterQuery4 = "ALTER TABLE `memo` ( \n" +
-            //                      Add Column members text);
-        }
-        if( old < 5) {
-            // version 5
-            // String alterQuery5 = "ALTER TABLE `memo` ( \n" +
-            //                      Add Column found text);
-        }
-    }
-}
+        // App 을 update 를 하게 되면 코드들이 새로 엎어써지고, DB Version 을 확인해서
 
+        // onUpgrade 를 실행하기위해 Alter Table 칼럼추가 를 하게 되면
+        // onCreate 에도 반영이 되어야 하고
 
-class Singleton {
-    // 인스턴스를 한개 저장하는 저장소
-    private static Singleton instance = null; // <- new Singleton();
+        // version check 를 통해 version 별로 업데이트 되는 내역 또한 반영이 되어야 한다.
 
-    // 접근 가능한 통로를 한개만 열어준다
-    public static Singleton getInstance(){
-        if(instance == null){
-            instance = new Singleton();
+        if (oldVersion < 2) {
+            //version 2
+            // 쿼리
         }
-        return instance;
-    }
 
-    // 얘는 앱 전체에 하나만 new 가 되어야 한다.
-    private Singleton(){
+        if (oldVersion < 3) {
+            //version 3
+            // 쿼리
+        }
 
+        if (oldVersion < 4) {
+            //version 4
+            // 쿼리
+        }
+
+        if (oldVersion < 5) {
+            //version 5
+            // 쿼리
+        }
+
+        if (oldVersion < newVersion) {
+            //version 6
+            // 쿼리
+        }
     }
 }

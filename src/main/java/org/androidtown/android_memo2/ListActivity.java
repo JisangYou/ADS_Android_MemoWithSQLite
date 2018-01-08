@@ -15,15 +15,18 @@ import java.util.ArrayList;
 
 
 /**
- * 안드로이드 sqllite 사용하기
- * 1. db파일을 직접 코드로 생성
- * 2. 로컬에서 만든 파일을 asset에 담은 후 복사 붙혀넣기
- * > 우편번호처럼 기반 데이터가 필요한 db일 경우
+ * 안드로이드 SQLite 사용하기
+ * <p>
+ * 1. db 파일을 직접 코드로 생성
+ * 2. 로컬에서 만든 파일을 assets 에 담은 후 복사/붙여넣기를 할 수 있다.
+ * > 우편번호처럼 기반 데이터가 필요한 DB일 경우
  */
-
 public class ListActivity extends AppCompatActivity implements View.OnClickListener {
-    Button btnCreate,btnRead,btnUpdate,btnDelete;
-    EditText editTitle,editContent;
+
+    MemoDAO memoDAO;
+
+    EditText editTitle, editContent;
+    Button btnCreate, btnRead, btnUpdate, btnDelete;
     TextView textResult;
 
     @Override
@@ -31,61 +34,174 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list);
 
-        initViews();
+        initView();
         initListener();
         init();
     }
-    MemoDAO dao = null;
-    private void init(){
-        dao = new MemoDAO(this);
-    }
 
+
+    /**
+     * onClick 정의
+     *
+     * @param v
+     */
     @Override
-    public void onClick(View view) {
-        switch (view.getId()){
+    public void onClick(View v) {
+        switch (v.getId()) {
             case R.id.btnCreate:
-                create();
+                createAfterRead();
                 break;
             case R.id.btnRead:
                 read();
                 break;
             case R.id.btnUpdate:
+                updateAfterRead();
                 break;
             case R.id.btnDelete:
+                deleteAfterRead();
                 break;
         }
     }
 
-    public void create(){
-        // 1. 화면에서 입력된 값을 가져온다
+    /**
+     * 화면에 작성한 값들을 Memo 객체로 생성
+     *
+     * @return
+     */
+    private Memo getMemoFromScreen() {
+        // 1. 화면에 입력된 값을 가져온다.
         String title = editTitle.getText().toString();
         String content = editContent.getText().toString();
-        // 2. 쿼리를 만든다
-        String query = "insert into memo(title, content, n_date)" +
-                " values('"+title+"','"+content+"',datetime('now','localtime'))";
-        // 3. DB에 실행
-        dao.create(query);
-        // 4. 입력 화면을 초기화해준다
+        // 2. Memo 객체를 하나 생성하여 값을 담는다.
+        Memo memo = new Memo(title, content);
+        return memo;
+    }
+
+    /**
+     * EditText 초기화
+     */
+    private void resetScreen() {
         editTitle.setText("");
         editContent.setText("");
-        // 5. 결과 안내
-        Toast.makeText(this, "입력되었습니다!!!", Toast.LENGTH_SHORT).show();
-        // 6. 목록 갱신
+        // 초기화 한 후 focus 준다.
+        editTitle.requestFocus();
+    }
+
+    /**
+     * Toast 출력
+     *
+     * @param message
+     */
+    private void showInfo(String message) {
+        // Toast Message 출력
+        Toast.makeText(getBaseContext(), message, Toast.LENGTH_LONG).show();
+    }
+
+    /**
+     * CREATE 실행
+     */
+    public void create(Memo memo) {
+        // DB 실행
+        memoDAO.create(memo);
+    }
+
+    /**
+     * READ 실행
+     */
+    public void read() {
+        // 0. 쿼리 생성
+        // 1. DB 실행한 후 결과값을 받아온다.
+        ArrayList<Memo> memoList = memoDAO.read(new String[]{"id", "title", "content", "nDate"}, null);
+        // 2. 결과값 출력
+        textResult.setText("");
+        if (memoList.size() != 0) {
+            for (Memo memo : memoList) {
+                textResult.append(memo.toString() + "\n");
+            }
+        }
+
+    }
+
+    /**
+     * UPDATE 실행
+     */
+    public void update(Memo memo) {
+        // DB 실행
+        memoDAO.update(memo);
+    }
+
+    /**
+     * DELETE 실행
+     */
+    public void delete() {
+        // DB 실행
+        memoDAO.delete();
+    }
+
+    /**
+     * CREATE 후 처리
+     */
+    private void createAfterRead() {
+        Memo memo = getMemoFromScreen();
+        // 1. 생성
+        create(memo);
+        // 2. 결과 완료
+        showInfo("등록 완료!");
+        // 3. 목록 갱신
+        resetScreen();
         read();
     }
 
-    public void read(){
-        // 0. 쿼리 있어야 되지만 생략 > DAO 에 이미 만들어 놨음
-        // 1. DB 실행한 후 결과값을 받아서 처리
+    /**
+     * UPDATE 후 처리
+     */
+    private void updateAfterRead() {
+        Memo memo = getMemoFromScreen();
+        // 1. 생성
+        update(memo);
+        // 2. 결과 완료
+        showInfo("수정 완료!");
+        // 3. 목록 갱신
+        resetScreen();
+        read();
+    }
 
-        ArrayList<Memo> data = dao.read();
-        textResult.setText(" ");
-        for(Memo memo :data){
-            textResult.append(memo.toString());
+    /**
+     * DELETE 후 처리
+     */
+    private void deleteAfterRead() {
+        ArrayList<Memo> memoList = memoDAO.read(new String[]{"id", "title", "content", "nDate"}, null);
+
+        if (memoList.size() != 0) {
+            delete();
+            // 2. 결과 완료
+            showInfo("삭제 완료!");
+            // 3. 목록 갱신
+            resetScreen();
+            read();
+        } else {
+            showInfo("데이터가 없음!");
         }
     }
 
+    /**
+     * View 초기화
+     */
+    private void initView() {
+        editTitle = (EditText) findViewById(R.id.editTitle);
+        editContent = (EditText) findViewById(R.id.editContent);
 
+        btnCreate = (Button) findViewById(R.id.btnCreate);
+        btnRead = (Button) findViewById(R.id.btnRead);
+        btnUpdate = (Button) findViewById(R.id.btnUpdate);
+        btnDelete = (Button) findViewById(R.id.btnDelete);
+
+        textResult = (TextView) findViewById(R.id.textResult);
+    }
+
+    /**
+     * Listener 초기화
+     */
     private void initListener() {
         btnCreate.setOnClickListener(this);
         btnRead.setOnClickListener(this);
@@ -93,23 +209,25 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         btnDelete.setOnClickListener(this);
     }
 
-    private void initViews(){
-        btnCreate = (Button) findViewById(R.id.btnCreate);
-        btnRead = (Button) findViewById(R.id.btnRead);
-        btnUpdate = (Button) findViewById(R.id.btnUpdate);
-        btnDelete = (Button) findViewById(R.id.btnDelete);
-
-        editTitle = (EditText) findViewById(R.id.editTitle);
-        editContent = (EditText) findViewById(R.id.editContent);
-        textResult = (TextView) findViewById(R.id.textResult);
+    /**
+     * memoDAO 초기화;
+     */
+    private void init() {
+        memoDAO = new MemoDAO(getBaseContext());
+        read();
     }
 
+    /**
+     * memoDAO 를 닫아준다.
+     */
     @Override
     protected void onDestroy() {
-        // 사용한 Database 클래스는 닫아준다.
-        if(dao != null){
-            dao.close();
-        }
         super.onDestroy();
+        if (memoDAO != null) {
+            memoDAO.close();
+        }
     }
+
 }
+
+
