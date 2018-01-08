@@ -44,11 +44,9 @@ public class MemoDAO {
     }
 
     private void executeSql(String sql) {
-        SQLiteDatabase conn = getWritableConnection();
-
-        conn.execSQL(sql);
-
-        closeConnection(conn);
+        SQLiteDatabase con = getWritableConnection();
+        con.execSQL(sql);
+        closeConnection(con);
     }
 
     /**
@@ -58,8 +56,8 @@ public class MemoDAO {
      */
     public void create(Memo memo) {
 
-        String createQuery = " INSERT INTO memo(title, content, nDate)";
-        createQuery += "VALUES('" + memo.getTitle() + "', '" + memo.getContent() + "', datetime('now', 'localtime'))";
+        String createQuery = "INSERT INTO memo(title, content, nDate) VALUES('" + memo.getTitle() + "', '" + memo.getContent() + "', datetime('now', 'localtime'))";
+
 
         executeSql(createQuery);
     }
@@ -69,23 +67,12 @@ public class MemoDAO {
      *
      * @return
      */
-    public ArrayList<Memo> read(String columns[], String where) {
+    public ArrayList<Memo> read() {
 
-        String query_prefix = "SELECT ";
-        String query_midfix = "";
-        for (int i = 0; i < columns.length; i++) {
-            query_midfix += " " + columns[i] + ((i != columns.length - 1) ? " ," : " ");
-        }
-        String query_suffix = "FROM memo";
-        if (where != null) {
-            query_suffix += " " + where;
-        }
-
-        String query = query_prefix + query_midfix + query_suffix;
+        String query = "select * from memo";
 
         // 1. 반환할 결과 타입을 정의
         ArrayList<Memo> memoList = new ArrayList<>();
-
         SQLiteDatabase con = getReadableConnection();
 
         // 2. 조작
@@ -93,20 +80,20 @@ public class MemoDAO {
         //con.query(테이블명, columns[], selection 인자(where 절), selectionArgs 인자, groupBy 인자, having 인자, orderBy 인자);
         while (cursor.moveToNext()) {
             Memo memo = new Memo();
-            for (String col : columns) {
-                int index = cursor.getColumnIndex(col);
-                switch (col) {
+            for (int i = 0; i < cursor.getColumnCount(); i++) {
+
+                switch (cursor.getColumnName(i)) {
                     case "id":
-                        memo.setId(cursor.getInt(index));
+                        memo.setId(cursor.getInt(i));
                         break;
                     case "title":
-                        memo.setTitle(cursor.getString(index));
+                        memo.setTitle(cursor.getString(i));
                         break;
                     case "content":
-                        memo.setContent(cursor.getString(index));
+                        memo.setContent(cursor.getString(i));
                         break;
                     case "nDate":
-                        memo.setnDate(cursor.getString(index));
+                        memo.setnDate(cursor.getString(i));
                         break;
                 }
             }
@@ -126,13 +113,12 @@ public class MemoDAO {
      * @param memo
      */
     public void update(Memo memo) {
-
-
         String updateQuery = " UPDATE memo " +
                 " SET title = '" + memo.getTitle() + "', " +
                 " content = '" + memo.getContent() + "', " +
                 " nDate = datetime('now', 'localtime')  " +
                 " WHERE id = (SELECT max(id) from Memo) ";
+
         executeSql(updateQuery);
     }
 
@@ -140,10 +126,9 @@ public class MemoDAO {
      * D: 삭제에 관련된 함수
      */
     public void delete() {
-
-
         String deleteQuery = " DELETE FROM memo " +
                 " WHERE id = (SELECT max(id) from Memo)";
+
         executeSql(deleteQuery);
     }
 

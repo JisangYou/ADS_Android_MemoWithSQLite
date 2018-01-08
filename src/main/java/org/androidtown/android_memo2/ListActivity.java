@@ -111,14 +111,14 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     public void read() {
         // 0. 쿼리 생성
         // 1. DB 실행한 후 결과값을 받아온다.
-        ArrayList<Memo> memoList = memoDAO.read(new String[]{"id", "title", "content", "nDate"}, null);
+        ArrayList<Memo> memoList = memoDAO.read();
         // 2. 결과값 출력
-        textResult.setText("");
-        if (memoList.size() != 0) {
-            for (Memo memo : memoList) {
-                textResult.append(memo.toString() + "\n");
-            }
+
+        String s = "";
+        for(Memo memo : memoList) {
+            s += "id : " + memo.getId() + " / title : " + memo.getTitle() + " / content : " + memo.getContent() + " / nDate : " + memo.getnDate() + "\n";
         }
+        textResult.setText(s);
 
     }
 
@@ -149,7 +149,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         showInfo("등록 완료!");
         // 3. 목록 갱신
         resetScreen();
-        read();
+
     }
 
     /**
@@ -170,7 +170,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
      * DELETE 후 처리
      */
     private void deleteAfterRead() {
-        ArrayList<Memo> memoList = memoDAO.read(new String[]{"id", "title", "content", "nDate"}, null);
+        ArrayList<Memo> memoList = memoDAO.read();
 
         if (memoList.size() != 0) {
             delete();

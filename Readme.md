@@ -105,14 +105,14 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     public void read() {
         // 0. 쿼리 생성
         // 1. DB 실행한 후 결과값을 받아온다.
-        ArrayList<Memo> memoList = memoDAO.read(new String[]{"id", "title", "content", "nDate"}, null);
+        ArrayList<Memo> memoList = memoDAO.read();
         // 2. 결과값 출력
-        textResult.setText("");
-        if (memoList.size() != 0) {
-            for (Memo memo : memoList) {
-                textResult.append(memo.toString() + "\n");
-            }
+
+        String s = "";
+        for(Memo memo : memoList) {
+            s += "id : " + memo.getId() + " / title : " + memo.getTitle() + " / content : " + memo.getContent() + " / nDate : " + memo.getnDate() + "\n";
         }
+        textResult.setText(s);
 
     }
 
@@ -143,7 +143,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         showInfo("등록 완료!");
         // 3. 목록 갱신
         resetScreen();
-        read();
+
     }
 
     /**
@@ -164,7 +164,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
      * DELETE 후 처리
      */
     private void deleteAfterRead() {
-        ArrayList<Memo> memoList = memoDAO.read(new String[]{"id", "title", "content", "nDate"}, null);
+        ArrayList<Memo> memoList = memoDAO.read();
 
         if (memoList.size() != 0) {
             delete();
@@ -278,48 +278,33 @@ public class DBHelper extends SQLiteOpenHelper {
 
         // version check 를 통해 version 별로 업데이트 되는 내역 또한 반영이 되어야 한다.
 
-        if(oldVersion < 2){
+        if (oldVersion < 2) {
             //version 2
             // 쿼리
         }
 
-        if(oldVersion < 3) {
+        if (oldVersion < 3) {
             //version 3
             // 쿼리
         }
 
-        if(oldVersion < 4) {
-            //version 4
-            // 쿼리
-        }
-
-        if(oldVersion < 5) {
-            //version 5
-            // 쿼리
-        }
-
-        if( oldVersion < newVersion ) {
-            //version 6
-            // 쿼리
-        }
     }
 }
-
 ```
 
 ### MemoDAO
 
 ```Java
 /**
- * DAO - Data Access Object
- * <p>
+ * DAO : Data Access Object
+ * Data 조작을 담당
  * <p>
  * 사용 예)
- * MemoDAO dao =  new DAO();                             1. DAO 객체를 생성
- * String query = "insert into...()";                    2. QUERY 생성
- * dao.create(query);                                    3. 쿼리 실행
+ * <p>
+ * MemoDAO dao = new MemoDAO();                 1. DAO 객체 생성
+ * String insertQuery = "insert into ~~"        2. Query 생성
+ * dao.create(query);                           3. Query 실행
  */
-
 public class MemoDAO {
 
     DBHelper dbHelper;
@@ -346,11 +331,11 @@ public class MemoDAO {
     }
 
     private void executeSql(String sql) {
-        SQLiteDatabase conn = getWritableConnection();
+        SQLiteDatabase con = getWritableConnection();
 
-        conn.execSQL(sql);
+        con.execSQL(sql);
 
-        closeConnection(conn);
+        closeConnection(con);
     }
 
     /**
@@ -360,8 +345,8 @@ public class MemoDAO {
      */
     public void create(Memo memo) {
 
-        String createQuery = " INSERT INTO memo(title, content, nDate)";
-        createQuery += "VALUES('" + memo.getTitle() + "', '" + memo.getContent() + "', datetime('now', 'localtime'))";
+        String createQuery = "INSERT INTO memo(title, content, nDate) VALUES('" + memo.getTitle() + "', '" + memo.getContent() + "', datetime('now', 'localtime'))";
+
 
         executeSql(createQuery);
     }
@@ -371,23 +356,12 @@ public class MemoDAO {
      *
      * @return
      */
-    public ArrayList<Memo> read(String columns[], String where) {
+    public ArrayList<Memo> read() {
 
-        String query_prefix = "SELECT ";
-        String query_midfix = "";
-        for (int i = 0; i < columns.length; i++) {
-            query_midfix += " " + columns[i] + ((i != columns.length - 1) ? " ," : " ");
-        }
-        String query_suffix = "FROM memo";
-        if (where != null) {
-            query_suffix += " " + where;
-        }
-
-        String query = query_prefix + query_midfix + query_suffix;
+        String query = "select * from memo";
 
         // 1. 반환할 결과 타입을 정의
         ArrayList<Memo> memoList = new ArrayList<>();
-
         SQLiteDatabase con = getReadableConnection();
 
         // 2. 조작
@@ -395,20 +369,20 @@ public class MemoDAO {
         //con.query(테이블명, columns[], selection 인자(where 절), selectionArgs 인자, groupBy 인자, having 인자, orderBy 인자);
         while (cursor.moveToNext()) {
             Memo memo = new Memo();
-            for (String col : columns) {
-                int index = cursor.getColumnIndex(col);
-                switch (col) {
+            for (int i = 0; i < cursor.getColumnCount(); i++) {
+
+                switch (cursor.getColumnName(i)) {
                     case "id":
-                        memo.setId(cursor.getInt(index));
+                        memo.setId(cursor.getInt(i));
                         break;
                     case "title":
-                        memo.setTitle(cursor.getString(index));
+                        memo.setTitle(cursor.getString(i));
                         break;
                     case "content":
-                        memo.setContent(cursor.getString(index));
+                        memo.setContent(cursor.getString(i));
                         break;
                     case "nDate":
-                        memo.setnDate(cursor.getString(index));
+                        memo.setnDate(cursor.getString(i));
                         break;
                 }
             }
@@ -428,13 +402,12 @@ public class MemoDAO {
      * @param memo
      */
     public void update(Memo memo) {
-
-
         String updateQuery = " UPDATE memo " +
                 " SET title = '" + memo.getTitle() + "', " +
                 " content = '" + memo.getContent() + "', " +
                 " nDate = datetime('now', 'localtime')  " +
                 " WHERE id = (SELECT max(id) from Memo) ";
+
         executeSql(updateQuery);
     }
 
@@ -442,10 +415,9 @@ public class MemoDAO {
      * D: 삭제에 관련된 함수
      */
     public void delete() {
-
-
         String deleteQuery = " DELETE FROM memo " +
                 " WHERE id = (SELECT max(id) from Memo)";
+
         executeSql(deleteQuery);
     }
 
@@ -672,7 +644,7 @@ class DatabaseHelper extends SQLiteOpenHelper {
 
 ## Retrospect
 
-
+- 추후 복습 및 내것으로 만드는 학습이 필요.
 
 ## Output
 - 생략

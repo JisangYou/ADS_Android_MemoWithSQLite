@@ -65,19 +65,5 @@ public class DBHelper extends SQLiteOpenHelper {
             // 쿼리
         }
 
-        if (oldVersion < 4) {
-            //version 4
-            // 쿼리
-        }
-
-        if (oldVersion < 5) {
-            //version 5
-            // 쿼리
-        }
-
-        if (oldVersion < newVersion) {
-            //version 6
-            // 쿼리
-        }
     }
 }
